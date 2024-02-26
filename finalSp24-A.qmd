@@ -1,0 +1,187 @@
+---
+title: "Take Home Final: SDS II"
+author: "Your Name Here"
+format: 
+  html:
+    self-contained: true
+    echo: true
+    message: false
+    warning: false
+    error: true # IMPORTANT NOTE - this makes the file render even if there is an error. it is imperative that you check your .html document *before submission* to make sure that it has all results in it.
+editor: source
+---
+
+**Notes:**
+
+- 1: Please read all instructions for each question carefully.
+
+- 2: All models can be constructed using the methods we learned this semester (Dr. Seals has double checked everything... she thinks 😅). Some questions are *intentionally* challenging to simulate a "real life" working environment where we have to research solutions to issues.
+
+- 3: Coding-specific notes:
+
+    - If you get an error about a model not converging, please look into increasing the number of iterations for the function you are using.
+  
+    - If a function suddenly does not work as it previously did on a project, Google the error message.
+      
+    - The following functions may be helpful when you need some data management help: `mutate()`, `as.numeric()`, `if_else()`, and/or `case_when()`.
+    
+- 4: Formatting notes:
+
+    - Please do not bold your responses - make it easy for me to tell the difference between my questions and your responses.
+    
+    - <u>Do not</u> print the dataset to the file; if you want to view the dataset, please use the data viewer in RStudio or use the `head()` function. (Do not make me scroll forever to find your answer... I may overlook it on accident.)
+  
+- 4: You are <u>not permitted</u> to discuss the content of this exam with <u>anyone</u> other than Dr. Seals. *Evidence of acaademic misconduct will be submitted to the Dean of Students office and you will receive a 0 on this exam.*
+
+---
+
+## Dataset 1: Spotify
+
+**1. Consider the Spotify data here: [TidyTuesday - Spotify](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-01-21). We will be working with *danceability* as the outcome and *loudness*, *energy*, and *playlist_genre* as predictors.  Go ahead and pull in the data.**
+
+
+
+**1a-i. Let's do some data exploration. What are the possible responses in *playlist_genre*? How many songs fall into each genre?**
+
+
+
+**1a-ii. Let's do some data exploration. What is the mean *danceability*, *loudness*, and *energy* for each level of *playlist_genre*?**
+
+
+
+**1b. Consider modeling *danceability* as a function of *loudness*, *energy*, *playlist_genre*, and the interaction between *loudness* and *energy*.**
+
+
+
+**1b-i. What method (distribution) do you think is appropriate to apply here? Provide evidence to support your idea.**
+
+
+
+**1b-ii. What is the resulting model using the approach from 1b-i?** 
+
+
+
+**1b-iii. Check the relevant assumptions of the model. Are we okay to proceed with statistical inference?**
+
+
+
+
+
+---
+
+## Dataset 2: Single Mother Households
+
+
+**2. Consider the childcare cost dataset here: [TidyTuesday - Childare Costs](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-05-09). We will be working with the number of single mother households with children under 6 years old (*h_under6_single_m*) as the outcome and median household income (*mhi_2018*), the unemployment rate for those 16 and older (*unr_16*), and the total number of households (*households*) as predictors.  Go ahead and pull in the data.**
+
+
+
+**2a-i. Let's do some data exploration. Explore and summarize the outcome, *h_under6_single_m*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
+
+
+
+**2a-ii. Let's do some data exploration. Explore and summarize *mhi_2018*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
+
+
+
+**2a-iii. Let's do some data exploration. Explore and summarize *unr_16*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
+
+
+
+**2a-iv. Let's do some data exploration. Explore and summarize *households*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
+
+
+
+**2b. Consider modeling *h_under6_single_m* as a function of *mhi_2018*, *unr_16*, *households*, and the interaction between *unr_16* and *households*.**
+
+
+
+**2b-i. What method (distribution) do you think is appropriate to apply here? Provide evidence to support your idea.**
+
+
+
+**2b-ii. What is the resulting model using the approach from 2b-i?** 
+
+
+
+**2b-iii. Check the relevant assumptions of the model. Are we okay to proceed with statistical inference?**
+
+
+
+
+
+---
+
+## Dataset 3: Scooby Doo 
+
+**3. Consider the Scooby Doo dataset here: [TidyTuesday - Scooby Doo](https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-07-13). We will be modeling if the culprit was arrested or not (*arrested*) as the outcome and will use snack data (*snack_fred*, *snack_daphnie*, *snack_velma*, *snack_shaggy*, *snack_scooby*), if Scrappy Doo appears in the episode (*scrappy_doo*), and the number of times "zoinks" is said in the episode (*zoinks*) in predictor creation. Go ahead and pull in the data.**
+
+
+**3a-i. Let's do some data exploration. What are the possible responses in *arrested*? How many episodes fall into each possible outcome?**
+
+
+
+**3a-ii. Let's do some data management. Create a variable to indicate whether or not the culprit was arrested. Do not include responses that are not of interest.**
+
+
+
+**3a-iii. Let's do some data management. Create a variable that indicates if there was a snack consumed during the episode. Your goal is to combine the snack data (*snack_fred*, *snack_daphnie*, *snack_velma*, *snack_shaggy*, *snack_scooby*) into a <u>single</u> yes/no variable.**
+
+
+
+**3a-iv. Let's do some data exploration. Find the overall mean number of zoinks (*zoinks*) per episode. Please note that some data management may (... or may not) be necessary.**
+
+
+
+**3a-v. Let's do some data exploration. Find the number of episodes that Scrappy Doo appears in (*scrappy_doo*). Please note that some data management may (... or may not) be necessary.**
+
+
+
+**3a-vi. Let's do some data exploration. Find the number of episodes in which a snack is consumed (i.e., the variable you created in 3a-iii).**
+
+
+
+**3a-vi. Let's do some data exploration.**
+
+- **What is the mean number of *zoinks* for episodes that resulted in an arrest and, separately, episodes that did not result in an arrest?** 
+
+- **What number of episodes included a snack when the episode resulted in an arrest and, separately, when an episode did not result in an arrest?** 
+
+
+
+
+
+
+**3b. Consider modeling your indicator variable for *arrested* (yes/no only, from 3a-ii) as a function of the number of *zoinks*, if any *snack* was consumed, if Scrappy Doo was in the episode (*scrappy_doo*), and <u>all</u> two-way interaction terms (i.e., *zoinks:snack*, *zoinks:scrappy_doo*, and *snack:scrappy_doo*).**
+
+
+
+**3b-i. What method (distribution) do you think is appropriate to apply here? Provide evidence to support your idea.**
+
+
+
+**3b-ii. What is the resulting model using the approach from 3b-i?** 
+
+
+
+**3c. Consider modeling your indicator variable for *arrested* (yes/no only, from 3a-ii) as a function of the number of *zoinks*, if any *snack* was consumed, and if Scrappy Doo was in the episode (*scrappy_doo*).**
+
+
+
+**3c-i. Why are you applying the same distribution as in 3b-i?**
+
+
+
+**3c-ii. What is the resulting model using the approach from 3b-i?** 
+
+
+**3d. Use leave-one-out cross validation to determine if the model from 3b-ii or 3c-ii is "better" for the data. Make sure you state which model is best and why.**
+
+
+
+
+
+
+
+
+
