@@ -1,13 +1,19 @@
 ---
 title: "Take Home Final: SDS II"
-author: "Your Name Here"
+author: "Brandy Carr"
 format: 
   html:
+    grid: 
+      sidebar-width: 0px
+      body-width: 1200px
+      margin-width: 0px
     self-contained: true
+    linkcolor: "#037968"
     echo: true
     message: false
     warning: false
-    error: true # IMPORTANT NOTE - this makes the file render even if there is an error. it is imperative that you check your .html document *before submission* to make sure that it has all results in it.
+    error: true 
+    highlight-style: highlight.theme
 editor: source
 ---
 
@@ -33,149 +39,674 @@ editor: source
   
 - 4: You are <u>not permitted</u> to discuss the content of this exam with <u>anyone</u> other than Dr. Seals. *Evidence of acaademic misconduct will be submitted to the Dean of Students office and you will receive a 0 on this exam.*
 
----
+</br>
+
+</br>
 
 ## Dataset 1: Spotify
 
 **1. Consider the Spotify data here: [TidyTuesday - Spotify](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-01-21). We will be working with *danceability* as the outcome and *loudness*, *energy*, and *playlist_genre* as predictors.  Go ahead and pull in the data.**
 
+```{r}
+library(tidyverse)
 
+spotify <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv')
+
+spotify <- spotify %>% 
+  select(danceability, loudness, energy, playlist_genre) %>%
+  mutate(playlist_genre = as.factor(playlist_genre))
+```
+
+</br>
 
 **1a-i. Let's do some data exploration. What are the possible responses in *playlist_genre*? How many songs fall into each genre?**
 
+```{r}
+#| results: hold
+playlist_genre_RANKED <- count(spotify, playlist_genre, sort=T)
 
+spotify %>%
+  mutate(playlist_genre = factor(playlist_genre, levels = playlist_genre_RANKED$playlist_genre, ordered=T)) %>%
+  ggplot(aes(playlist_genre, col=playlist_genre, fill=playlist_genre)) +
+  geom_bar(alpha=0.3) +
+  stat_count(geom="text", 
+             col="black", 
+             size=3.5, 
+             position=position_stack(vjust=0.5),
+             aes(label=after_stat(count))) +
+  theme_bw(base_size=12) +
+  theme(legend.position="none")
+```
+
+</br>
 
 **1a-ii. Let's do some data exploration. What is the mean *danceability*, *loudness*, and *energy* for each level of *playlist_genre*?**
 
+```{r}
+#| out-width: 100%
+#| fig-asp: 0.4
+#| fig-dpi: 300
+library(kableExtra)
 
+spotify %>%
+  group_by(playlist_genre) %>%
+  summarise_all(., mean) %>%
+  kable(align=rep("c",4)) %>%
+  kable_paper()
+
+spotify %>%
+  pivot_longer(cols=danceability:energy) %>%
+  filter(value > -30) %>%
+  group_by(playlist_genre, name) %>%
+  ggplot(aes(x=playlist_genre, y=value, group=playlist_genre, col=playlist_genre, fill=playlist_genre)) +
+  geom_boxplot(alpha=0.3) +
+  theme_bw(base_size=6.5) +
+  theme(legend.position="none", panel.spacing.x=unit(2,"lines")) +
+  facet_wrap(name~., scales="free")
+```
+
+</br>
 
 **1b. Consider modeling *danceability* as a function of *loudness*, *energy*, *playlist_genre*, and the interaction between *loudness* and *energy*.**
 
-
-
 **1b-i. What method (distribution) do you think is appropriate to apply here? Provide evidence to support your idea.**
 
+```{r}
+#| eval: false
+# danceability - Normal Histogram
+par(mfrow=c(1,1), mar=c(5,5,4,2))
+rcompanion::plotNormalHistogram(spotify$danceability, 
+                                prob=F,
+                                xlab="danceability",
+                                main="Normal Histogram of danceability",
+                                linecol=1,
+                                xlim=c(0,1))
+box(which="figure", col="lightgray")
 
+
+# danceability by genre - Normal Histogram's 
+genres <- as.character(playlist_genre_RANKED$playlist_genre)
+
+normHist_FUN <- function(i){
+  rcompanion::plotNormalHistogram(spotify$danceability[spotify$playlist_genre==genres[i]], 
+                                  prob=T, 
+                                  xaxt="n", yaxt="n",
+                                  ylab="", xlab="",
+                                  col=rainbow(6,alpha=0.3)[i],
+                                  border=colorspace::darken(rainbow(6)[i], 0.2),
+                                  linecol=1,
+                                  xlim=c(0,1))
+  text(x=0.03, y=1.5, labels=genres[i], col=colorspace::darken(rainbow(6)[i], 0.3), cex=2, adj=c(0,0.5))
+}
+
+par(mfrow=c(3,2), mar=c(3,3,3,3))
+for(i in 1:6){
+  normHist_FUN(i)
+  box(which="figure", col="lightgray")
+  }
+```
+
+::: {layout="[55,-5,40]"}
+![](danceability_normHist.png)
+
+![](danceability_normHist_genre.png)
+:::
+
+```{r}
+#| eval: false
+# normal histogram's of loudness & energy
+# scatterplots of loudness & energy ~ danceability
+set.seed(1000)
+i = sample(1:nrow(spotify), 1000)
+par(mfrow=c(2,2), mar=c(5,5,2,2))
+rcompanion::plotNormalHistogram(spotify$loudness[spotify$loudness >= -25], xlab="loudness")
+plot(spotify$danceability[i] ~ spotify$loudness[i], xlim=c(-25,0), xlab="loudness", ylab="danceability")
+rcompanion::plotNormalHistogram(spotify$energy, xlab="energy")
+plot(spotify$danceability[i] ~ spotify$energy[i], xlab="energy", ylab="danceability")
+box(which="outer", col="lightgray")
+
+
+# scatterplot of loudness ~ energy
+par(mfrow=c(1,1), mar=c(5,5,2,2))
+plot(spotify$loudness[i] ~ spotify$energy[i], 
+     xlab="energy", 
+     ylab="loudness")
+box(which="outer", col="lightgray")
+```
+
+::: {layout="[50,-5,45]"}
+![](loudness_energy_1.png)
+
+![](loudness_energy_2.png)
+:::
+
+</br>
 
 **1b-ii. What is the resulting model using the approach from 1b-i?** 
 
+```{r}
+spotify_reduced <- glm(danceability ~ 1, data=spotify)
+spotify_full <- glm(danceability ~ loudness + energy + playlist_genre + loudness:energy, data=spotify)
 
+summary(spotify_full)
+
+car::Anova(spotify_full, type=3)
+
+anova(spotify_reduced, spotify_full, test="LRT")
+```
+
+</br>
 
 **1b-iii. Check the relevant assumptions of the model. Are we okay to proceed with statistical inference?**
 
+```{r}
+#| eval: false
+par(mfrow=c(2,2), mar=c(5,5,4,2))
+plot(spotify_full)
+box(which="outer", col="lightgray")
+```
 
+![](spotify_residPlots.png)
 
+Assumptions NOT met.
 
+Cannot proceed with statistical inference.
 
----
+</br>
+
+</br>
 
 ## Dataset 2: Single Mother Households
 
-
 **2. Consider the childcare cost dataset here: [TidyTuesday - Childare Costs](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-05-09). We will be working with the number of single mother households with children under 6 years old (*h_under6_single_m*) as the outcome and median household income (*mhi_2018*), the unemployment rate for those 16 and older (*unr_16*), and the total number of households (*households*) as predictors.  Go ahead and pull in the data.**
 
+```{r}
+childcare_costs <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-05-09/childcare_costs.csv')
 
+childcare_costs <- childcare_costs %>% 
+  select(h_under6_single_m, mhi_2018, unr_16, households) %>%
+  na.omit()
+```
+
+</br>
 
 **2a-i. Let's do some data exploration. Explore and summarize the outcome, *h_under6_single_m*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
 
+```{r}
+# total number of rows
+(total = noquote(paste0("Total Rows = ", nrow(childcare_costs))))
 
+# quantiles
+qts = quantile(childcare_costs$h_under6_single_m)
+(qtsDF <- data.frame("quantile" = c("0%","25%","50%","75%","100%"),
+                    "value" = unname(qts)))
+
+# boxplot stats
+# whiskers extend to the most extreme data point which is no more than coef times the length of the box away from the box
+bps = boxplot.stats(childcare_costs$h_under6_single_m, coef=4)$stats
+# number of outliers when coef=4
+bpsOut = length(boxplot.stats(childcare_costs$h_under6_single_m, coef=4)$out)
+(bpsDF <- data.frame("boxplotStats" = c("extreme of lower whisker",
+                                       "lower hinge",
+                                       "median",
+                                       "upper hinge",
+                                       "extreme of upper whisker",
+                                       "number of outliers"),
+                    "value" = c(bps, bpsOut),
+                    "cummulativePct" = c("1%","25%","50%","75%","93%","")))
+```
+
+```{r}
+#| eval: false
+# boxplots
+options(scipen=n)
+par(mfrow=c(3,1), mar=c(6,3,3,3), family="HersheySans", font=2, cex.lab=1.7)
+boxplot(childcare_costs$h_under6_single_m, xlab="h_under6_single_m", horizontal=T, col="peachpuff1")
+boxplot(childcare_costs$h_under6_single_m, ylim=c(0,50000), xlab="h_under6_single_m (zoomed in)", horizontal=T, col="lightpink1")
+boxplot(log(childcare_costs$h_under6_single_m+1), xlab="log of (h_under6_single_m + 1)", horizontal=T, col="paleturquoise1")
+box(which="outer", col="lightgray")
+```
+
+![](childcare_boxplots_outcome.png)
+
+```{r}
+#| eval: false
+# Histograms
+
+par(mfrow=c(3,1), mar=c(6,6,6,3), cex.lab=1.3, cex.main=1.5, cex.axis=1.2)
+
+# h_under6_single_m
+hist(childcare_costs$h_under6_single_m,
+     main="Histogram of h_under6_single_m",
+     xlab="",
+     col="peachpuff1")
+
+# h_under6_single_m < 50000
+hist(childcare_costs$h_under6_single_m[childcare_costs$h_under6_single_m < 50000],
+     main="Histogram of (h_under6_single_m < 50000)",
+     xlab="", 
+     col="lightpink1")
+
+# log(h_under6_single_m + 1)
+hist(log(childcare_costs$h_under6_single_m + 1),
+     main="Histogram of log(h_under6_single_m + 1)",
+     xlab="",
+     col="paleturquoise1") 
+
+box(which="outer", col="lightgray")
+```
+
+![](childcare_hist_1.png)
+
+<!--
+```{r}
+#| results: hold 
+# proportions
+
+# percent of h_under6_single_m = 0
+n0 = nrow(filter(childcare_costs, h_under6_single_m == 0))
+noquote(paste0("percent of h_under6_single_m == 0  ->  ", round(100*n0/N, 1), "%"))
+
+# percent of h_under6_single_m < 10000
+n10 = nrow(filter(childcare_costs, h_under6_single_m < 10000))
+noquote(paste0("percent of h_under6_single_m < 10000  ->  ", round(100*n10/N, 1), "%"))
+
+# percent of h_under6_single_m < 50000
+n50 = nrow(filter(childcare_costs, h_under6_single_m < 50000))
+noquote(paste0("percent of h_under6_single_m < 50000  ->  ", round(100*n50/N, 1), "%"))
+```
+-->
+
+</br>
 
 **2a-ii. Let's do some data exploration. Explore and summarize *mhi_2018*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
 
+```{r}
+#| results: hold
+mhi_2018 = childcare_costs$mhi_2018
+summary(mhi_2018)
+quantile(mhi_2018)
+```
 
+```{r}
+#| eval: false
+par(mfrow=c(3,1), mar=c(6,6,6,3), cex.lab=1.3, cex.main=1.5, cex.axis=1.2)
+
+boxplot(mhi_2018, 
+        main="boxplot of mhi_2018", xlab="",
+        horizontal=T, 
+        col="peachpuff1")
+
+rcompanion::plotNormalHistogram(mhi_2018, 
+                                main="normal histogram of mhi_2018", xlab="",
+                                col="peachpuff1")
+
+rcompanion::plotNormalHistogram(log(mhi_2018), 
+                                main="normal histogram of log(mhi_2018)", xlab="",
+                                col="paleturquoise1")
+
+box(which="outer", col="lightgray")
+```
+
+![](childcare_mhi_2018_1.png)
+
+</br>
 
 **2a-iii. Let's do some data exploration. Explore and summarize *unr_16*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
 
+```{r}
+#| results: hold
+unr_16 = childcare_costs$unr_16
+summary(unr_16)
+quantile(unr_16)
+```
 
+```{r}
+#| eval: false
+par(mfrow=c(3,1), mar=c(5,6,5,3), cex.lab=1.2, cex.main=1.4, cex.axis=1.1)
+
+boxplot(unr_16, 
+        main="boxplot of unr_16", xlab="",
+        horizontal=T, 
+        col="peachpuff1")
+
+rcompanion::plotNormalHistogram(unr_16, 
+                                main="normal histogram of unr_16", xlab="",
+                                col="peachpuff1")
+
+rcompanion::plotNormalHistogram(log(unr_16 + 1), 
+                                main="normal histogram of log(unr_16 + 1)", xlab="",
+                                col="paleturquoise1")
+
+box(which="outer", col="lightgray")
+```
+
+![](childcare_unr_16_1.png)
+
+</br>
 
 **2a-iv. Let's do some data exploration. Explore and summarize *households*. (Yes, this is vague. You should look at summary statistics and at least one graph.)**
 
+```{r}
+#| results: hold
+households = childcare_costs$households
+summary(households)
+quantile(households)
+```
 
+```{r}
+#| eval: false
+par(mfrow=c(3,1), mar=c(5,6,5,3), cex.lab=1.2, cex.main=1.4, cex.axis=1.1)
+
+boxplot(households, 
+        main="boxplot of households", xlab="",
+        horizontal=T, 
+        col="peachpuff1")
+
+rcompanion::plotNormalHistogram(households, 
+                                main="normal histogram of households", xlab="",
+                                col="peachpuff1")
+
+rcompanion::plotNormalHistogram(log(households), 
+                                main="normal histogram of log(households)", xlab="",
+                                col="paleturquoise1")
+
+box(which="outer", col="lightgray")
+```
+
+![](childcare_households_1.png)
+
+</br>
 
 **2b. Consider modeling *h_under6_single_m* as a function of *mhi_2018*, *unr_16*, *households*, and the interaction between *unr_16* and *households*.**
 
-
-
 **2b-i. What method (distribution) do you think is appropriate to apply here? Provide evidence to support your idea.**
 
+```{r}
+# NOT poisson
+# mean does NOT equal variance 
+mean(childcare_costs$h_under6_single_m)
+var(childcare_costs$h_under6_single_m)
+```
 
+Will use a normal distribution after applying the following transformations:
+
+- log(h_under6_single_m + 1)
+- log(households)
+
+```{r}
+childcare_costs <- childcare_costs %>% 
+  mutate(h_under6_single_m_LOG = log(h_under6_single_m + 1),
+         households_LOG = log(households))
+```
+
+</br>
 
 **2b-ii. What is the resulting model using the approach from 2b-i?** 
 
+```{r}
+households_reduced <- glm(h_under6_single_m_LOG ~ 1, data=childcare_costs)
 
+households_full <- glm(h_under6_single_m_LOG ~ mhi_2018 + unr_16 + households_LOG + unr_16:households_LOG, 
+                       data=childcare_costs)
+
+summary(households_full)
+
+anova(households_reduced, households_full, test="LRT")
+```
+
+</br>
 
 **2b-iii. Check the relevant assumptions of the model. Are we okay to proceed with statistical inference?**
 
+```{r}
+#| eval: false
+par(mfrow=c(1,1))
+GGally::ggpairs(select(childcare_costs, h_under6_single_m_LOG, mhi_2018, unr_16, households_LOG))
+```
 
+![](childcare_corr.png)
 
+```{r}
+#| eval: false
+par(mfrow=c(2,2), mar=c(5,5,4,2))
+plot(households_full)
+box(which="outer", col="lightgray")
+```
 
+![](childcare_LOG_residPlots.png)
 
----
+Assumptions NOT met.
+
+Cannot proceed with statistical inference.
+
+```{r}
+#| results: hold
+# extra code
+
+childcare_costs$prop <- childcare_costs$h_under6_single_m / childcare_costs$households
+
+childcare_prop_nb <- MASS::glm.nb(prop ~ mhi_2018 + unr_16 + mhi_2018:unr_16, data=childcare_costs)
+
+summary(childcare_prop_nb)
+
+dev.off()
+par(mfrow=c(2,2))
+plot(childcare_prop_nb, cex=0.5)
+```
+
+</br>
+
+</br>
+
 
 ## Dataset 3: Scooby Doo 
 
 **3. Consider the Scooby Doo dataset here: [TidyTuesday - Scooby Doo](https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-07-13). We will be modeling if the culprit was arrested or not (*arrested*) as the outcome and will use snack data (*snack_fred*, *snack_daphnie*, *snack_velma*, *snack_shaggy*, *snack_scooby*), if Scrappy Doo appears in the episode (*scrappy_doo*), and the number of times "zoinks" is said in the episode (*zoinks*) in predictor creation. Go ahead and pull in the data.**
 
+```{r}
+scooby <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-07-13/scoobydoo.csv')
+
+scooby <- scooby %>%
+  select(arrested, snack_fred, snack_daphnie, snack_velma, snack_shaggy, snack_scooby, scrappy_doo, zoinks) %>%
+  na.omit()
+
+str(scooby)
+
+# zoinks should be integer, not char.. checking values
+count(scooby, zoinks) %>% filter(zoinks=="NULL")
+
+# remove rows that contain "NULL" values
+scooby <- scooby %>%
+  filter(arrested != "NULL",
+         snack_fred != "NULL",
+         snack_daphnie != "NULL",
+         snack_velma != "NULL",
+         snack_scooby != "NULL",
+         zoinks != "NULL") %>%
+  mutate(arrested = ifelse(arrested=="TRUE", 1, 0),
+         snack_fred = ifelse(snack_fred=="TRUE", 1, 0),
+         snack_daphnie = ifelse(snack_daphnie=="TRUE", 1, 0),
+         snack_velma = ifelse(snack_velma=="TRUE", 1, 0),
+         snack_shaggy = ifelse(snack_shaggy=="TRUE", 1, 0),
+         snack_scooby = ifelse(snack_scooby=="TRUE", 1, 0),
+         scrappy_doo = ifelse(scrappy_doo==TRUE, 1, 0),
+         zoinks = as.numeric(zoinks))
+
+str(scooby)  
+```
+
+</br>
 
 **3a-i. Let's do some data exploration. What are the possible responses in *arrested*? How many episodes fall into each possible outcome?**
 
+```{r}
+count(scooby, arrested)
+```
 
+</br>
 
 **3a-ii. Let's do some data management. Create a variable to indicate whether or not the culprit was arrested. Do not include responses that are not of interest.**
 
+I think I might have already done this step when pulling in the data. 
 
+I removed any rows that contained "NULL" values.
+
+</br>
 
 **3a-iii. Let's do some data management. Create a variable that indicates if there was a snack consumed during the episode. Your goal is to combine the snack data (*snack_fred*, *snack_daphnie*, *snack_velma*, *snack_shaggy*, *snack_scooby*) into a <u>single</u> yes/no variable.**
 
+```{r}
+scooby <- scooby %>%
+  mutate(snack = ifelse(snack_fred+snack_daphnie+snack_velma+snack_shaggy+snack_scooby > 0, 1, 0))
 
+count(scooby, snack)
+```
+
+</br>
 
 **3a-iv. Let's do some data exploration. Find the overall mean number of zoinks (*zoinks*) per episode. Please note that some data management may (... or may not) be necessary.**
 
+```{r}
+xbar = mean(scooby$zoinks)
+par(mfrow=c(1,1))
+barplot(table(scooby$zoinks), xlab="zoinks", ylab="count", col="lightgray")
+abline(v=xbar, col="magenta", lwd=2, lty=4)
+text(x=xbar+0.3, y=110, col="magenta", paste0("mean number of zoinks = ", xbar), adj=0)
+box(which="outer", col="lightgray")
+```
 
+</br>
 
 **3a-v. Let's do some data exploration. Find the number of episodes that Scrappy Doo appears in (*scrappy_doo*). Please note that some data management may (... or may not) be necessary.**
 
+```{r}
+length(scooby$scrappy_doo[scooby$scrappy_doo == 1])
+```
 
+Using the complete cases data set, scrappy doo only appears in 22 of the 368 total episodes, about 6%.
+
+</br>
 
 **3a-vi. Let's do some data exploration. Find the number of episodes in which a snack is consumed (i.e., the variable you created in 3a-iii).**
 
+```{r}
+length(scooby$snack[scooby$snack == 1])
+```
 
+Using the complete cases data set, snacks were consumed in 102 of the 368 total episodes, about 28%.
+
+</br>
 
 **3a-vi. Let's do some data exploration.**
 
 - **What is the mean number of *zoinks* for episodes that resulted in an arrest and, separately, episodes that did not result in an arrest?** 
 
+```{r}
+scooby %>% 
+  group_by(arrested) %>%
+  summarise(zoinks_MEAN = mean(zoinks))
+```
+
 - **What number of episodes included a snack when the episode resulted in an arrest and, separately, when an episode did not result in an arrest?** 
 
+```{r}
+scooby %>% 
+  group_by(arrested) %>%
+  summarise(snack_SUM = sum(snack))
 
+xtabs(~arrested+snack, data=scooby)
+```
 
-
-
+</br>
 
 **3b. Consider modeling your indicator variable for *arrested* (yes/no only, from 3a-ii) as a function of the number of *zoinks*, if any *snack* was consumed, if Scrappy Doo was in the episode (*scrappy_doo*), and <u>all</u> two-way interaction terms (i.e., *zoinks:snack*, *zoinks:scrappy_doo*, and *snack:scrappy_doo*).**
-
-
 
 **3b-i. What method (distribution) do you think is appropriate to apply here? Provide evidence to support your idea.**
 
 
+Binomial Distribution.
+
+Logistic Regression.
+
+</br>
 
 **3b-ii. What is the resulting model using the approach from 3b-i?** 
 
+```{r}
+# full model
+scooby_full <- glm(arrested ~ zoinks + snack + scrappy_doo + zoinks:snack + zoinks:scrappy_doo + snack:scrappy_doo, data=scooby, family="binomial"(link="logit"))
 
+# reduced model (intercept only)
+scooby_reduced <- glm(arrested ~ 1, data=scooby, family="binomial"(link="logit"))
+
+# tests significance of the m1 regression line
+anova(scooby_reduced, scooby_full, test="LRT")
+
+# tests significance of each predictor
+car::Anova(scooby_full, type=3)
+
+# tests significance of all terms (pairwise)
+summary(scooby_full)
+```
+
+</br>
 
 **3c. Consider modeling your indicator variable for *arrested* (yes/no only, from 3a-ii) as a function of the number of *zoinks*, if any *snack* was consumed, and if Scrappy Doo was in the episode (*scrappy_doo*).**
 
+```{r}
+# full model
+scooby_full_2 <- glm(arrested ~ zoinks + snack + scrappy_doo, data=scooby, family="binomial"(link="logit"))
 
+# tests significance of the m1 regression line
+anova(scooby_reduced, scooby_full_2, test="LRT")
+
+# tests significance of each predictor
+car::Anova(scooby_full_2, type=3)
+
+# tests significance of all terms (pairwise)
+summary(scooby_full_2)
+```
+
+</br>
 
 **3c-i. Why are you applying the same distribution as in 3b-i?**
 
+The type of outcome variable didn't change, it is still binary.
 
+We only dropped the interaction terms.
+
+</br>
 
 **3c-ii. What is the resulting model using the approach from 3b-i?** 
 
+```{r}
+round(summary(scooby_full)$coef,2)
+```
+
+arrested_hat = 1.81 + 0.12(zoinks) + 0.63(snack) + 17.6(scrappy_doo) - 0.2(zoinks:snack) - 0.48(zoinks:scrappy_doo) - 16.86(snack:scrappy_doo)
+
+</br>
 
 **3d. Use leave-one-out cross validation to determine if the model from 3b-ii or 3c-ii is "better" for the data. Make sure you state which model is best and why.**
+
+```{r}
+# 3b-ii CV Prediction Error
+set.seed(3874)
+boot::cv.glm(scooby, scooby_full)$delta
+
+# 3c-ii CV Prediction Error
+set.seed(3874)
+boot::cv.glm(scooby, scooby_full_2)$delta
+```
+
+</br>
+
+**Which model fits better?**
+
+3c-ii
+
+The model from 3c-ii has lower error & is also the simpler model :)
 
 
 
